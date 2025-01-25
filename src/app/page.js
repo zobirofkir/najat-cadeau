@@ -18,15 +18,18 @@ export default function Home() {
     renderer.setClearColor(0x000000, 1); // Changed to black for better contrast
     document.body.appendChild(renderer.domElement);
 
-    // Background Animation (starry sky)
-    const background = new THREE.TextureLoader().load('path_to_star_texture.jpg');
+    // Background Animation (moving starry sky)
+    const background = new THREE.TextureLoader().load('https://images.pexels.com/photos/912110/pexels-photo-912110.jpeg?cs=srgb&dl=pexels-elia-clerici-282848-912110.jpg&fm=jpg');
     scene.background = background;
+    let backgroundOffset = 0;
 
     // Lighting setup
     const ambientLight = new THREE.AmbientLight(0x404040, 1);
     const pointLight = new THREE.PointLight(0xff0000, 1, 100);
     pointLight.position.set(0, 10, 20);
-    scene.add(ambientLight, pointLight);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+    directionalLight.position.set(10, 10, 10).normalize();
+    scene.add(ambientLight, pointLight, directionalLight);
 
     // Heart Shape Geometry
     const heartShape = new THREE.Shape();
@@ -48,8 +51,8 @@ export default function Home() {
     loader.load('https://threejs.org/examples/fonts/helvetiker_regular.typeface.json', (font) => {
       const textMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
       
-      // Generate multiple text elements with typewriter effect
-      const numTexts = 100;
+      // Generate multiple text elements with random movement
+      const numTexts = 50;
       for (let i = 0; i < numTexts; i++) {
         const randomText = "I'm Sorry Najat";
         const textGeometry = new TextGeometry(randomText, {
@@ -68,7 +71,6 @@ export default function Home() {
           Math.random() * 200 - 100, 
           Math.random() * -50 - 30
         );
-
         scene.add(textMesh);
       }
     });
@@ -77,7 +79,7 @@ export default function Home() {
     const bloodParticles = [];
     const particleMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
     const particleGeometry = new THREE.SphereGeometry(0.7, 8, 8);
-    const numParticles = 500;
+    const numParticles = 300;
 
     for (let i = 0; i < numParticles; i++) {
       const particle = new THREE.Mesh(particleGeometry, particleMaterial);
@@ -91,23 +93,14 @@ export default function Home() {
     }
 
     const animateParticles = () => {
-      let allParticlesOut = true;
       bloodParticles.forEach((particle) => {
         const targetPosition = new THREE.Vector3(0, -2, -30);
         const direction = particle.position.clone().normalize();
-        const speed = 0.2;
+        const speed = 0.1;
         const rotationSpeed = 0.02;
         particle.position.add(direction.multiplyScalar(speed));
         particle.rotation.y += rotationSpeed;
-
-        if (particle.position.distanceTo(targetPosition) < 200) {
-          allParticlesOut = false;
-        }
       });
-
-      if (allParticlesOut) {
-        heartMesh.rotation.y += 0.02;
-      }
     };
 
     // Camera animation with rotation around the heart
@@ -119,7 +112,7 @@ export default function Home() {
       camera.lookAt(heartMesh.position);
     };
 
-    // Heart pulsation effect with smoother transitions
+    // Smooth pulsation effect for the heart
     let scaleDirection = 1;
     const pulsateHeart = () => {
       const minScale = 7;
@@ -137,6 +130,10 @@ export default function Home() {
     // Main animation loop
     const animate = () => {
       requestAnimationFrame(animate);
+
+      // Background animation
+      backgroundOffset += 0.001;
+      scene.background.offset.x = backgroundOffset;
 
       animateParticles();
       cameraAnimation();
