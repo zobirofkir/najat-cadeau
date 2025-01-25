@@ -15,14 +15,20 @@ export default function Home() {
     );
     const renderer = new THREE.WebGLRenderer();
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setClearColor(0xffffff, 1);
+    renderer.setClearColor(0x000000, 1); // Changed to black for better contrast
     document.body.appendChild(renderer.domElement);
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    // Background Animation (starry sky)
+    const background = new THREE.TextureLoader().load('path_to_star_texture.jpg');
+    scene.background = background;
+
+    // Lighting setup
+    const ambientLight = new THREE.AmbientLight(0x404040, 1);
     const pointLight = new THREE.PointLight(0xff0000, 1, 100);
     pointLight.position.set(0, 10, 20);
     scene.add(ambientLight, pointLight);
 
+    // Heart Shape Geometry
     const heartShape = new THREE.Shape();
     heartShape.moveTo(0, 0);
     heartShape.bezierCurveTo(1, 1, 2, 1, 2, 0);
@@ -37,29 +43,40 @@ export default function Home() {
     heartMesh.position.set(0, -2, -30);
     scene.add(heartMesh);
 
+    // Text Elements
     const loader = new FontLoader();
-    let textMesh;
     loader.load('https://threejs.org/examples/fonts/helvetiker_regular.typeface.json', (font) => {
-      const textGeometry = new TextGeometry("I'm Sorry Najat", {
-        font: font,
-        size: 5,
-        height: 1,
-        curveSegments: 12,
-      });
-
-      const textBox = new THREE.Box3().setFromObject(new THREE.Mesh(textGeometry));
-      const width = textBox.max.x - textBox.min.x;
-
       const textMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-      textMesh = new THREE.Mesh(textGeometry, textMaterial);
-      textMesh.position.set(-width / 2, 10, -50);
+      
+      // Generate multiple text elements with typewriter effect
+      const numTexts = 100;
+      for (let i = 0; i < numTexts; i++) {
+        const randomText = "I'm Sorry Najat";
+        const textGeometry = new TextGeometry(randomText, {
+          font: font,
+          size: 2,
+          height: 1,
+          curveSegments: 12,
+        });
 
-      scene.add(textMesh);
+        const textBox = new THREE.Box3().setFromObject(new THREE.Mesh(textGeometry));
+        const width = textBox.max.x - textBox.min.x;
+
+        const textMesh = new THREE.Mesh(textGeometry, textMaterial);
+        textMesh.position.set(
+          Math.random() * 200 - 100, 
+          Math.random() * 200 - 100, 
+          Math.random() * -50 - 30
+        );
+
+        scene.add(textMesh);
+      }
     });
 
+    // Blood Particle System
     const bloodParticles = [];
     const particleMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-    const particleGeometry = new THREE.SphereGeometry(0.6, 8, 8);
+    const particleGeometry = new THREE.SphereGeometry(0.7, 8, 8);
     const numParticles = 500;
 
     for (let i = 0; i < numParticles; i++) {
@@ -90,25 +107,19 @@ export default function Home() {
 
       if (allParticlesOut) {
         heartMesh.rotation.y += 0.02;
-        if (textMesh) {
-          textMesh.position.set(0, 10, -30);
-          textMesh.scale.set(1, 1, 1);
-        }
       }
     };
 
-    camera.position.z = 40;
-    let zoomIn = true;
+    // Camera animation with rotation around the heart
+    let rotationAngle = 0;
     const cameraAnimation = () => {
-      if (zoomIn) {
-        camera.position.z -= 0.05;
-        if (camera.position.z < 35) zoomIn = false;
-      } else {
-        camera.position.z += 0.05;
-        if (camera.position.z > 40) zoomIn = true;
-      }
+      rotationAngle += 0.01;
+      camera.position.x = 40 * Math.sin(rotationAngle);
+      camera.position.z = 40 * Math.cos(rotationAngle);
+      camera.lookAt(heartMesh.position);
     };
 
+    // Heart pulsation effect with smoother transitions
     let scaleDirection = 1;
     const pulsateHeart = () => {
       const minScale = 7;
@@ -123,6 +134,7 @@ export default function Home() {
       heartMesh.rotation.y += 0.005 * scaleDirection;
     };
 
+    // Main animation loop
     const animate = () => {
       requestAnimationFrame(animate);
 
