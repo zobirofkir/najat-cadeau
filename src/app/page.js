@@ -1,101 +1,124 @@
-import Image from "next/image";
+"use client";
+
+import { useEffect } from "react";
+import * as THREE from "three";
+import { FontLoader, TextGeometry } from "three-stdlib";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.js
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  useEffect(() => {
+    // Scene setup
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(
+      75,
+      window.innerWidth / window.innerHeight,
+      0.1,
+      1000
+    );
+    const renderer = new THREE.WebGLRenderer();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setClearColor(0xffffff, 1); // Set background to white
+    document.body.appendChild(renderer.domElement);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+    // Add lighting
+    const light = new THREE.AmbientLight(0xffffff, 1);
+    scene.add(light);
+
+    // Heart shape with pulsating effect
+    const heartShape = new THREE.Shape();
+    heartShape.moveTo(0, 0);
+    heartShape.bezierCurveTo(1, 1, 2, 1, 2, 0);
+    heartShape.bezierCurveTo(2, -1, 1, -2, 0, -3);
+    heartShape.bezierCurveTo(-1, -2, -2, -1, -2, 0);
+    heartShape.bezierCurveTo(-2, 1, -1, 1, 0, 0);
+
+    const heartGeometry = new THREE.ShapeGeometry(heartShape);
+    const heartMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000, side: THREE.DoubleSide });
+    const heartMesh = new THREE.Mesh(heartGeometry, heartMaterial);
+    heartMesh.scale.set(8, 8, 1);
+    heartMesh.position.set(0, -2, -30);
+    scene.add(heartMesh);
+
+    // Pulsating heart animation
+    const animateHeart = () => {
+      const pulse = Math.sin(Date.now() * 0.005) * 0.1 + 1; // Pulsate effect
+      heartMesh.scale.set(pulse * 8, pulse * 8, 1);
+    };
+
+    // Create blood particles moving toward the heart
+    const bloodParticles = [];
+    const particleMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+    const particleGeometry = new THREE.SphereGeometry(0.5, 8, 8);
+    const numParticles = 1000;
+
+    for (let i = 0; i < numParticles; i++) {
+      const particle = new THREE.Mesh(particleGeometry, particleMaterial);
+      particle.position.set(
+        Math.random() * 200 - 100,
+        Math.random() * 200 - 100,
+        Math.random() * -50 - 30
+      );
+      scene.add(particle);
+      bloodParticles.push(particle);
+    }
+
+    // Move blood particles toward the heart
+    const animateParticles = () => {
+      bloodParticles.forEach((particle) => {
+        const targetPosition = new THREE.Vector3(0, -2, -30); // Heart center position
+        const direction = targetPosition.sub(particle.position).normalize();
+        const speed = 0.1;
+        particle.position.add(direction.multiplyScalar(speed));
+      });
+    };
+
+    // Create animated text
+    const loader = new FontLoader();
+    let textMesh;
+    loader.load('https://threejs.org/examples/fonts/helvetiker_regular.typeface.json', (font) => {
+      const textGeometry = new TextGeometry('I love You Najat!', {
+        font: font,
+        size: 5,
+        height: 1,
+        curveSegments: 12,
+      });
+      const textMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff });
+      textMesh = new THREE.Mesh(textGeometry, textMaterial);
+      textMesh.position.set(-30, 10, -50);
+      scene.add(textMesh);
+    });
+
+    // Text animation (moving and changing color)
+    const animateText = () => {
+      if (textMesh) {
+        textMesh.position.x += 0.1; // Move text to the right
+        textMesh.material.color.setHSL((Math.sin(Date.now() * 0.001) + 1) / 2, 1, 0.5); // Change color
+      }
+    };
+
+    // Camera positioning
+    camera.position.z = 40;
+
+    // Animation loop
+    const animate = () => {
+      requestAnimationFrame(animate);
+
+      // Animate heart, particles, and text
+      animateHeart();
+      animateParticles();
+      animateText();
+
+      renderer.render(scene, camera);
+    };
+
+    animate();
+
+    // Handle window resize
+    window.addEventListener("resize", () => {
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+    });
+  }, []);
+
+  return <div />;
 }
