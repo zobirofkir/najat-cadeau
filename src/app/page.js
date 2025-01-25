@@ -6,7 +6,6 @@ import { FontLoader, TextGeometry } from "three-stdlib";
 
 export default function Home() {
   useEffect(() => {
-    // Scene setup
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(
       75,
@@ -16,14 +15,14 @@ export default function Home() {
     );
     const renderer = new THREE.WebGLRenderer();
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setClearColor(0xffffff, 1); // Set background to white
+    renderer.setClearColor(0xffffff, 1);
     document.body.appendChild(renderer.domElement);
 
-    // Add lighting
-    const light = new THREE.AmbientLight(0xffffff, 1);
-    scene.add(light);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    const pointLight = new THREE.PointLight(0xff0000, 1, 100);
+    pointLight.position.set(0, 10, 20);
+    scene.add(ambientLight, pointLight);
 
-    // Heart shape with pulsating effect
     const heartShape = new THREE.Shape();
     heartShape.moveTo(0, 0);
     heartShape.bezierCurveTo(1, 1, 2, 1, 2, 0);
@@ -38,17 +37,30 @@ export default function Home() {
     heartMesh.position.set(0, -2, -30);
     scene.add(heartMesh);
 
-    // Pulsating heart animation
-    const animateHeart = () => {
-      const pulse = Math.sin(Date.now() * 0.005) * 0.1 + 1; // Pulsate effect
-      heartMesh.scale.set(pulse * 8, pulse * 8, 1);
-    };
+    const loader = new FontLoader();
+    let textMesh;
+    loader.load('https://threejs.org/examples/fonts/helvetiker_regular.typeface.json', (font) => {
+      const textGeometry = new TextGeometry("I'm Sorry Najat", {
+        font: font,
+        size: 5,
+        height: 1,
+        curveSegments: 12,
+      });
 
-    // Create blood particles moving toward the heart
+      const textBox = new THREE.Box3().setFromObject(new THREE.Mesh(textGeometry));
+      const width = textBox.max.x - textBox.min.x;
+
+      const textMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+      textMesh = new THREE.Mesh(textGeometry, textMaterial);
+      textMesh.position.set(-width / 2, 10, -50);
+
+      scene.add(textMesh);
+    });
+
     const bloodParticles = [];
     const particleMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
     const particleGeometry = new THREE.SphereGeometry(0.5, 8, 8);
-    const numParticles = 1000;
+    const numParticles = 500;
 
     for (let i = 0; i < numParticles; i++) {
       const particle = new THREE.Mesh(particleGeometry, particleMaterial);
@@ -61,58 +73,68 @@ export default function Home() {
       bloodParticles.push(particle);
     }
 
-    // Move blood particles toward the heart
     const animateParticles = () => {
+      let allParticlesOut = true;
       bloodParticles.forEach((particle) => {
-        const targetPosition = new THREE.Vector3(0, -2, -30); // Heart center position
-        const direction = targetPosition.sub(particle.position).normalize();
-        const speed = 0.1;
+        const targetPosition = new THREE.Vector3(0, -2, -30);
+        const direction = particle.position.clone().normalize();
+        const speed = 0.2;
+        const rotationSpeed = 0.02;
         particle.position.add(direction.multiplyScalar(speed));
-      });
-    };
+        particle.rotation.y += rotationSpeed;
 
-    // Create animated text
-    const loader = new FontLoader();
-    let textMesh;
-    loader.load('https://threejs.org/examples/fonts/helvetiker_regular.typeface.json', (font) => {
-      const textGeometry = new TextGeometry('I love You Najat!', {
-        font: font,
-        size: 5,
-        height: 1,
-        curveSegments: 12,
+        if (particle.position.distanceTo(targetPosition) < 200) {
+          allParticlesOut = false;
+        }
       });
-      const textMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff });
-      textMesh = new THREE.Mesh(textGeometry, textMaterial);
-      textMesh.position.set(-30, 10, -50);
-      scene.add(textMesh);
-    });
 
-    // Text animation (moving and changing color)
-    const animateText = () => {
-      if (textMesh) {
-        textMesh.position.x += 0.1; // Move text to the right
-        textMesh.material.color.setHSL((Math.sin(Date.now() * 0.001) + 1) / 2, 1, 0.5); // Change color
+      if (allParticlesOut) {
+        heartMesh.rotation.y += 0.02;
+        if (textMesh) {
+          textMesh.position.set(0, 10, -30);
+          textMesh.scale.set(1, 1, 1);
+        }
       }
     };
 
-    // Camera positioning
     camera.position.z = 40;
+    let zoomIn = true;
+    const cameraAnimation = () => {
+      if (zoomIn) {
+        camera.position.z -= 0.05;
+        if (camera.position.z < 35) zoomIn = false;
+      } else {
+        camera.position.z += 0.05;
+        if (camera.position.z > 40) zoomIn = true;
+      }
+    };
 
-    // Animation loop
+    let scaleDirection = 1;
+    const pulsateHeart = () => {
+      const minScale = 7;
+      const maxScale = 9;
+      const speed = 0.02;
+
+      if (heartMesh.scale.x > maxScale || heartMesh.scale.x < minScale) scaleDirection *= -1;
+
+      heartMesh.scale.x += speed * scaleDirection;
+      heartMesh.scale.y += speed * scaleDirection;
+      heartMesh.rotation.x += 0.005 * scaleDirection; 
+      heartMesh.rotation.y += 0.005 * scaleDirection;
+    };
+
     const animate = () => {
       requestAnimationFrame(animate);
 
-      // Animate heart, particles, and text
-      animateHeart();
       animateParticles();
-      animateText();
+      cameraAnimation();
+      pulsateHeart();
 
       renderer.render(scene, camera);
     };
 
     animate();
 
-    // Handle window resize
     window.addEventListener("resize", () => {
       renderer.setSize(window.innerWidth, window.innerHeight);
       camera.aspect = window.innerWidth / window.innerHeight;
