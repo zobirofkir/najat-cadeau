@@ -59,7 +59,7 @@ export default function Home() {
 
     const bloodParticles = [];
     const particleMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-    const particleGeometry = new THREE.SphereGeometry(0.5, 8, 8);
+    const particleGeometry = new THREE.SphereGeometry(0.6, 8, 8);
     const numParticles = 500;
 
     for (let i = 0; i < numParticles; i++) {
